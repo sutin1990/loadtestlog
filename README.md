@@ -17,26 +17,24 @@ Grafana รวมถึง Logging ผ่าน Loki โดยสามารถ
 ## 🗂️ โครงสร้างไฟล์
 
     loadtestlog/
-    │-- compose/
-    │   │-- docker-compose.yml
-    │   │-- docker-compose.infra.yml
-    │   │-- docker-compose.grafana.yml
     │
-    │-- k6/
-    │   │-- scripts/
-    │       │-- sample-test.js
-    │   │-- outputs/
-    │       │-- influxdb.json
+    │-- dockercompose/
+    |   |-- docker-compose.yml
+    │
+    │-- scripts/
+    │   │-- k6-script.js
     │
     │-- grafana/
-    │   │-- dashboards/
-    │   │-- provisioning/
+    │   │-- grafana-dockerfile/
+    |       │-- Dockerfile
     │
     │-- loki/
-    │   │-- config.yml
+    │   │-- loki-dockerfile/
+    |       │-- Dockerfile
     │
     │-- influxdb/
-    │   │-- influxdb.conf
+    │   │-- influxdb-dockerfile
+    |       │-- Dockerfile
     │
     └── README.md
 
@@ -55,9 +53,9 @@ Grafana รวมถึง Logging ผ่าน Loki โดยสามารถ
 
 ใช้ compose รวม infrastructure:
 
-    docker compose -f compose/docker-compose.infra.yml up -d
+    docker compose up -d
 
-บริการที่ถูกเปิดใช้งาน:
+Service ที่ถูกเปิดใช้งาน:
 
   Service    Port   Description
   ---------- ------ ---------------------
@@ -69,8 +67,6 @@ Grafana รวมถึง Logging ผ่าน Loki โดยสามารถ
 ------------------------------------------------------------------------
 
 ## 3️⃣ Start Grafana Environment
-
-    docker compose -f compose/docker-compose.grafana.yml up -d
 
 เปิด Grafana ที่\
 👉 http://localhost:3000\
@@ -107,7 +103,14 @@ user/pass: `admin/admin` (ปรับได้ตามต้องการ)
 
 ### 6️⃣ รัน load test script
 
-    k6 run k6/scripts/sample-test.js
+# แสดง contaniner ทั้งหมด
+    docker ps
+
+# เข้า ไปใน debug
+    docker exec -it <container id> sh
+
+# command run load test ใน debug ของ container (--insecure-skip-tls-verify คือ option ของ k6 ที่ใช้สั่งให้ข้ามการตรวจสอบ TLS certificate ของปลายทาง (เช่น HTTPS API ที่ยิง load test เข้าไป))
+    k6 run --insecure-skip-tls-verify --out influxdb=http://influxdb:8086/k6 /scripts/k6-script.js
 
 ผลลัพธ์จะถูกส่งเข้า: - InfluxDB → ใช้ดูบน dashboard - Loki → ใช้ดู log
 ผ่าน Explore
@@ -132,13 +135,13 @@ Grafana → **Explore**\
 เลือก Data Source: **Loki**\
 ใส่ query ตัวอย่าง:
 
-    {job="promtail"}
+    {job="dotnet-logs"}
 
 ------------------------------------------------------------------------
 
 # 🎯 คำแนะนำเพิ่มเติม
 
--   ถ้าต้องการแก้ปริมาณ load ดูที่ไฟล์ `sample-test.js`
+-   ถ้าต้องการแก้ปริมาณ load ดูที่ไฟล์ `\scripts\k6-script.js`
 -   หากต้องการเก็บผลลัพธ์แบบไฟล์ JSON → แก้ใน k6 output options
 -   ถ้าโหลดหนักมากให้ปรับ resource limit ใน docker-compose
 
