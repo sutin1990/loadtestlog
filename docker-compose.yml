@@ -34,13 +34,13 @@ services:
   #   restart: unless-stopped
   #   networks:
   #     - monitoring
-  restapitest:
-    image: restapitest
-    build:
-      context: .
-      dockerfile: Rest-Api-Test/Rest-Api-Test/Dockerfile
-    ports:
-      - 5213:5213
+  # restapitest:
+  #   image: restapitest
+  #   build:
+  #     context: .
+  #     dockerfile: Rest-Api-Test/Rest-Api-Test/Dockerfile
+  #   ports:
+  #     - 5213:5213
   loki:
     image: grafana/loki:2.9.4
     ports:
@@ -53,7 +53,8 @@ services:
     image: grafana/promtail:2.9.4
     volumes:
       - ./config/promtail-config.yml:/etc/promtail/config.yml
-      - /var/log:/var/log
+      - D:/data/fbb-integ/onlinequery:/app/logs:ro 
+      # - /var/log:/var/log
     command: -config.file=/etc/promtail/config.yml
     networks:
       - monitoring
@@ -82,28 +83,20 @@ services:
     volumes:
       - grafana-storage:/var/lib/grafana
     depends_on:
-      - influxdb
-    # entrypoint:
-    #   - sh
-    #   - -euc
-    #   - |
-    #     mkdir -p /etc/grafana/provisioning/datasources
-    #     cat <<EOF > /etc/grafana/provisioning/datasources/ds.yaml
-    #     apiVersion: 1
-    #     datasources:
-    #     - name: Loki
-    #       type: loki
-    #       access: proxy
-    #       orgId: 1
-    #       url: http://loki:3100
-    #       basicAuth: false
-    #       isDefault: true
-    #       version: 1
-    #       editable: false
-    #     EOF
-    #     /run.sh
+      - influxdb    
     image: grafana/grafana:latest
     ports:
       - "3000:3000"
     networks:
       - monitoring
+
+  k6:
+    image: grafana/k6
+    entrypoint: ["sh", "-c", "sleep infinity"] #ตั้งค่าให้ k6 sleep ไว้ เพื่อให้สามารถรัน คำสั่ง load test ได้เรื่อยๆ
+    #command: run --out influxdb=http://influxdb:8086/k6 /scripts/k6-script.js
+    volumes:
+      - ./scripts:/scripts
+    networks:
+      - monitoring
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

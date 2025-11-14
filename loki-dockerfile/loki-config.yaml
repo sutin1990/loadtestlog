@@ -25,12 +25,24 @@ schema_config:
         prefix: index_
         period: 24h
 
+# storage_config:
+#   tsdb_shipper:
+#     active_index_directory: /loki/index
+#     cache_location: /loki/cache
+#   filesystem:
+#     directory: /loki/chunks
+
 storage_config:
-  tsdb_shipper:
+  boltdb_shipper:
     active_index_directory: /loki/index
     cache_location: /loki/cache
-  filesystem:
-    directory: /loki/chunks
+    shared_store: azure
+  azure:
+    account_name: "${LOKI_STORAGE_ACCOUNT}"
+    account_key: "${LOKI_STORAGE_KEY}"
+    container_name: "${DOCKER_REGISTRY_SERVER_USERNAME}"
+    prefix: "logs/"
+    secure: true
 
 limits_config:
   allow_structured_metadata: false  # Temporarily disable structured metadata
